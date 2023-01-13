@@ -1,166 +1,288 @@
-import { Field } from 'react-final-form';
-import Wizard from './Wizard';
-import WizardPage from './WizardPage';
+import { useState } from "react";
+import { Field } from "react-final-form";
+import Modal from "./Modal";
+import Wizard from "./Wizard";
+import WizardPage from "./WizardPage";
+import useUnsavedChangesWarning from "./hooks/useUnsavedChangesWarning";
 
+import {
+  TextField,
+  Box,
+  MenuItem,
+  FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  OutlinedInput,
+  Checkbox,
+  ListItemText,
+  FormLabel,
+  RadioGroup,
+  Radio,
+} from "@mui/material";
+import { Theme, useTheme } from "@mui/material/styles";
+import { SelectChangeEvent } from "@mui/material/Select";
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const onSubmit = async values => {
-  await sleep(300)
-  window.alert(JSON.stringify(values, 0, 2))
-}
+const onSubmit = async (values) => {
+  await sleep(300);
+  window.alert(JSON.stringify(values, 0, 2));
+};
 
-const Error = ({ name }) => (
-  <Field
-    name={name}
-    subscribe={{ touched: true, error: true }}
-    render={({ meta: { touched, error } }) =>
-      touched && error ? <span>{error}</span> : null
-    }
-  />
-)
+const required = (value) => (value ? undefined : "Required");
+const validateName = (value) => {
+  if (!value) {
+    return "This field is obligatory";
+  }
+  if (value?.length < 4) {
+    return "The value is too short";
+  }
+  if (value?.length > 30) {
+    return "The value is too long";
+  }
+};
 
-const required = value => (value ? undefined : 'Required')
+const FAVCOLORS = [
+  {
+    value: "#ff0000",
+    label: "❤️ Red",
+  },
+  {
+    value: "#00ff00",
+    label: "💚 Green",
+  },
+  {
+    value: "#0000ff",
+    label: "💙 Blue",
+  },
+];
 
+const STOOGES = [
+  {
+    value: "stooge_1",
+    label: "Stooge 1",
+  },
+  {
+    value: "stooge_2",
+    label: "Stooge 2",
+  },
+  {
+    value: "stooge_3",
+    label: "Stooge 3",
+  },
+];
 
 const App = () => {
+  const [modalOpened, setModalOpened] = useState(false);
+
+  const [setWarningUp, setWarningDown] = useUnsavedChangesWarning();
+
   return (
     <div className="App">
-      <h1>Wizard Form</h1>
-      
-      <Wizard
-        initialValues={{ employed: true, stooge: 'larry' }}
-        onSubmit={onSubmit}
+      <button onClick={() => setModalOpened(true)}>Open Modal</button>
+      <Modal open={modalOpened} onClose={() => setModalOpened(false)}>
+        Modal is Opened
+      </Modal>
+      <Box
+        sx={{
+          border: "1px solid blue",
+          borderRadius: "10px",
+          minHeight: "500px",
+          width: "50%",
+          margin: "auto",
+          padding: "20px",
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <WizardPage>
-          <div>
-            <label>First Name</label>
+        <h1>Wizard Form</h1>
+
+        <Wizard
+          initialValues={{ employed: true, stooge: "stooge_1" }}
+          onSubmit={onSubmit}
+        >
+          <WizardPage>
             <Field
               name="firstName"
-              component="input"
-              type="text"
-              placeholder="First Name"
-              validate={required}
+              validate={validateName}
+              render={(props) => (
+                <TextField
+                  label="First Name"
+                  variant="outlined"
+                  required
+                  value={props.input.value}
+                  onChange={props.input.onChange}
+                  onClick={setWarningUp}
+                  helperText={
+                    props.meta.error && props.meta.modified
+                      ? props.meta.error
+                      : ""
+                  }
+                  error={props.meta.error && props.meta.modified}
+                />
+              )}
             />
-            <Error name="firstName" />
-          </div>
-          <div>
-            <label>Last Name</label>
             <Field
               name="lastName"
-              component="input"
-              type="text"
-              placeholder="Last Name"
-              validate={required}
+              validate={validateName}
+              render={(props) => (
+                <TextField
+                  label="Last Name"
+                  variant="outlined"
+                  required
+                  value={props.input.value}
+                  onChange={props.input.onChange}
+                  helperText={
+                    props.meta.error && props.meta.modified
+                      ? props.meta.error
+                      : ""
+                  }
+                  error={props.meta.error && props.meta.modified}
+                />
+              )}
             />
-            <Error name="lastName" />
-          </div>
-        </WizardPage>
-        <WizardPage
-          validate={values => {
-            const errors = {}
-            if (!values.email) {
-              errors.email = 'Required'
-            }
-            if (!values.favoriteColor) {
-              errors.favoriteColor = 'Required'
-            }
-            return errors
-          }}
-        >
-          <div>
-            <label>Email</label>
+          </WizardPage>
+          <WizardPage>
             <Field
               name="email"
-              component="input"
-              type="email"
-              placeholder="Email"
+              render={(props) => (
+                <TextField
+                  label="Email"
+                  variant="outlined"
+                  type="email"
+                  required
+                  value={props.input.value}
+                  onChange={props.input.onChange}
+                />
+              )}
             />
-            <Error name="email" />
-          </div>
+            <Field
+              name="favoriteColor"
+              render={(props) => (
+                <TextField
+                  select
+                  label="Color"
+                  // defaultValue={FAVCOLORS[1].value}
+                  value={props.input.value}
+                  onChange={props.input.onChange}
+                  helperText="Select your favorite color"
+                  required
+                >
+                  {FAVCOLORS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+          </WizardPage>
+          <WizardPage>
+            <Field
+              name="employed"
+              type="checkbox"
+              render={(props) => (
+                <FormControlLabel
+                  value="start"
+                  label="Employed?"
+                  labelPlacement="start"
+                  control={
+                    <Checkbox
+                      defaultChecked
+                      value={props.input.value}
+                      onChange={props.input.onChange}
+                    />
+                  }
+                />
+              )}
+            />
+          {/* <Field
+              name="toppings"
+              render={(props) => {
+                console.log(props.input.value)
+                // props.input.onChange([])
+                return(
+                <FormControl sx={{ m: 1, width: 300 }}>
+                  <InputLabel id="demo-multiple-chip-label">Topping:</InputLabel>
+                  <Select
+                    name="toppings"
+                    multiple
+                    // value={props.input.value}
+                    // onChange={props.input.onChange}
+                    value={personName}
+                    // In this field we cant set props.input.value, because the field requires array
+                    // value={props.input.value}
+                    onChange={handleChange}
+                    input={<OutlinedInput label="Topping:" />}
+                    renderValue={(selected) => selected.join(', ')}
+                    MenuProps={MenuProps}
+                  >
+                    {TOPPINGS.map((name) => (
+                      <MenuItem key={name} value={name}>
+                        <Checkbox checked={personName.indexOf(name) > -1} />
+                        <ListItemText primary={name} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}}
+            /> */}
           <div>
-            <label>Favorite Color</label>
-            <Field name="favoriteColor" component="select">
-              <option />
-              <option value="#ff0000">❤️ Red</option>
-              <option value="#00ff00">💚 Green</option>
-              <option value="#0000ff">💙 Blue</option>
-            </Field>
-            <Error name="favoriteColor" />
-          </div>
-        </WizardPage>
-        <WizardPage
-          validate={values => {
-            const errors = {}
-            if (!values.toppings) {
-              errors.toppings = 'Required'
-            } else if (values.toppings.length < 2) {
-              errors.toppings = 'Choose more'
-            }
-            return errors
-          }}
-        >
-          <div>
-            <label>Employed?</label>
-            <Field name="employed" component="input" type="checkbox" />
-          </div>
-          <div>
-            <label>Toppings</label>
-            <Field name="toppings" component="select" multiple>
-              <option value="ham">🐷 Ham</option>
-              <option value="mushrooms">🍄 Mushrooms</option>
-              <option value="cheese">🧀 Cheese</option>
-              <option value="chicken">🐓 Chicken</option>
-              <option value="pineapple">🍍 Pinapple</option>
-            </Field>
-            <Error name="toppings" />
-          </div>
-        </WizardPage>
-        <WizardPage
-          validate={values => {
-            const errors = {}
-            if (!values.notes) {
-              errors.notes = 'Required'
-            }
-            return errors
-          }}
-        >
-          <div>
-            <label>Best Stooge?</label>
-            <div>
-              <label>
-                <Field
-                  name="stooge"
-                  component="input"
-                  type="radio"
-                  value="larry"
-                />{' '}
-                Larry
-              </label>
-              <label>
-                <Field name="stooge" component="input" type="radio" value="moe" />{' '}
-                Moe
-              </label>
-              <label>
-                <Field
-                  name="stooge"
-                  component="input"
-                  type="radio"
-                  value="curly"
-                />{' '}
-                Curly
-              </label>
+              <label>Toppings</label><br />
+              <Field name="toppings" component="select" multiple>
+                <option value="ham">🐷 Ham</option>
+                <option value="mushrooms">🍄 Mushrooms</option>
+                <option value="cheese">🧀 Cheese</option>
+                <option value="chicken">🐓 Chicken</option>
+                <option value="pineapple">🍍 Pinapple</option>
+              </Field>
             </div>
-          </div>
-          <div>
-            <label>Notes</label>
-            <Field name="notes" component="textarea" placeholder="Notes" />
-            <Error name="notes" />
-          </div>
-        </WizardPage>
-      </Wizard>
+          </WizardPage>
+          <WizardPage>
+            <Field
+              name="stooge"
+              type="radio"
+              render={(props) => (
+                <FormControl>
+                  <FormLabel>Best Stooge?</FormLabel>
+                  <RadioGroup
+                    defaultValue='stooge_1'
+                    value={props.input.value}
+                    onChange={props.input.onChange}
+                    required
+                  >
+                    {STOOGES.map((stooge) => (
+                      <FormControlLabel
+                        key={stooge.value}
+                        value={stooge.value}
+                        control={<Radio />}
+                        label={stooge.label}
+                      />
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              )}
+            />
+            <Field
+              name="notes"
+              render={(props) => (
+                <TextField
+                  label="Notes"
+                  multiline
+                  rows={4}
+                  variant="filled"
+                  value={props.input.value}
+                  onChange={props.input.onChange}
+                />
+              )}
+            />
+          </WizardPage>
+        </Wizard>
+      </Box>
     </div>
   );
-}
+};
 
 export default App;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Form } from 'react-final-form'
-import useUnload from './hooks/useUnload'
+import useUnload from './hooks/useUnload';
+import Button from '@mui/material/Button';
 
 const Wizard = (props) => {
   const [state, setState] = useState({
@@ -8,18 +9,8 @@ const Wizard = (props) => {
     values: props.initialValues || {}
   })
 
-  // we call this if user wants to leave page without submitting the form 
-  // console.log(formSubmitted)
-  // window.onbeforeunload = function(e){
-  //   var message = "Submit form before leaving the page";
-  //   return message; // doesn't work in Chrome
-  // }
-  
-  // onbeforeunload version using hook
-  // useUnload(e => {
-  //   e.preventDefault();
-  //   e.returnValue = '';
-  // });
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+
 
 
   const next = values => setState(state => ({
@@ -39,12 +30,15 @@ const Wizard = (props) => {
     return activePage.props.validate ? activePage.props.validate(values) : {}
   }
 
-  const handleSubmit = (values, form) => {
-    form.reset();
+  const handleSubmit = (values, form) => {    
     const { children, onSubmit } = props
     const { page } = state
     const isLastPage = page === React.Children.count(children) - 1
     if (isLastPage) {
+      // as far as we cannot reset all form (we render a bunch of fields, not all in one form, so reset last ones), 
+      // we remove "previous button" and add link to start
+      form.reset();
+      setIsFormSubmitted(true);
       return onSubmit(values);
     } else {
       next(values)
@@ -63,18 +57,20 @@ const Wizard = (props) => {
       render={({ handleSubmit, form, submitting, values }) => (
         <form onSubmit={handleSubmit}>
           {activePage}
+          <br />
           <div className="buttons">
-            {page > 0 && (
-              <button type="button" onClick={previous}>
-                « Previous
-              </button>
+            {page > 0 && !isFormSubmitted && (
+              <Button variant="contained" onClick={previous}>Previous</Button>
             )}
-            {!isLastPage && <button type="submit">Next »</button>}
+            {!isLastPage && 
+              <Button variant="contained" type="submit">Next</Button>
+            }
             {isLastPage && (
-              <button type="submit" disabled={submitting}>
-                Submit
-              </button>
+              <Button variant="contained" type="submit" disabled={submitting }>Submit</Button> // || isFormSubmitted
             )}
+            {isFormSubmitted &&
+              <a href='#'><br/>Go to start</a>
+            }
           </div>
 
           <pre>{JSON.stringify(values, 0, 2)}</pre>
